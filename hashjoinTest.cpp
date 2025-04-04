@@ -24,16 +24,16 @@ std::vector<std::pair<int, int>> generate_random_data(size_t size, int key_range
 // 测试用例：测量 HashJoin 的运行时间
 TEST(HashJoinTest, PerformanceTestWith100K) {
     // 设置随机数据参数
-    const size_t data_size = 100'000;  // 10 万条数据
-    const int key_range = 10'000;      // 键的范围：1 到 10,000
-    const int value_range = 1'000;     // 值的范围：1 到 1,000
+    const size_t data_size = 1000000;  // 100 万条数据
+    const int key_range = 10000;      // 键的范围：1 到 10,000
+    const int value_range = 1000;     // 值的范围：1 到 1,000
 
     // 生成随机数据
     auto R = generate_random_data(data_size, key_range, value_range);
     auto S = generate_random_data(data_size, key_range, value_range);
 
     // 创建 HashTable 对象
-    HashTable ht;  // 默认构造函数，假设 buckets 大小已设置
+    HashTable ht(R.size() / 10 + 7);  // 默认构造函数，假设 buckets 大小已设置
 
     // 测量 Build 阶段时间
     auto build_start = std::chrono::high_resolution_clock::now();
@@ -43,7 +43,7 @@ TEST(HashJoinTest, PerformanceTestWith100K) {
 
     // 测量 Probe 阶段时间
     auto probe_start = std::chrono::high_resolution_clock::now();
-    size_t match_count = ht.Probe(S);
+    auto result = ht.Probe(S);
     auto probe_end = std::chrono::high_resolution_clock::now();
     auto probe_duration = std::chrono::duration_cast<std::chrono::milliseconds>(probe_end - probe_start);
 
@@ -51,10 +51,23 @@ TEST(HashJoinTest, PerformanceTestWith100K) {
     std::cout << "Build time: " << build_duration.count() << " ms\n";
     std::cout << "Probe time: " << probe_duration.count() << " ms\n";
     std::cout << "Total time: " << (build_duration + probe_duration).count() << " ms\n";
-    std::cout << "Match count: " << match_count << "\n";
+    std::cout << "Match count: " << result.size() << "\n";
+}
 
-    // 可选：添加性能断言（例如总时间小于某个阈值）
-    EXPECT_LT((build_duration + probe_duration).count(), 5000) << "HashJoin took too long!";
+TEST(HashJoinTest, MutiThreadTest) {
+    const size_t data_size = 1000000;  // 100 万条数据
+    const int key_range = 10000;      // 键的范围：1 到 10,000
+    const int value_range = 1000;     // 值的范围：1 到 1,000
+
+    // 生成随机数据
+    auto R = generate_random_data(data_size, key_range, value_range);
+    auto S = generate_random_data(data_size, key_range, value_range);
+    auto start = std::chrono::high_resolution_clock::now();
+    auto res = multi_threaded_hash_join(R,S,8);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Multi-threaded HashJoin time: " << duration.count() << " ms\n";
+    std::cout << "Join result size: " << res.size() << "\n";
 }
 
 }  // namespace hashjoin

@@ -17,17 +17,20 @@ endif()
 # 包含 Google Test 的头文件路径
 include_directories(${GTEST_INCLUDE_DIRS})
 
+# 添加 include 目录到头文件搜索路径
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 # 添加源文件
 set(SOURCES
-    hashjoin.cpp
+    src/hashjoin.cpp
 )
 
-# 创建库（可选，方便复用）
+# 创建库（方便复用）
 add_library(hashjoin STATIC ${SOURCES})
-target_include_directories(hashjoin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(hashjoin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # 创建测试可执行文件
-add_executable(hashjoin_test hashjoinTest.cpp)
+add_executable(hashjoin_test test/hashjoinTest.cpp)
 
 # 链接库
 target_link_libraries(hashjoin_test

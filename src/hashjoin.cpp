@@ -4,6 +4,10 @@ namespace hashjoin {
 
 //-----------public--------------
 void HashTable::Insert(int key, int value) {
+#ifdef BLOOM_FILTER_ENABLE
+  std::lock_guard<std::mutex> blm_lock(blm_mtx);
+  blm_.insert(key);
+#endif
   auto& bucket = buckets[hash(key)];
   // Lock the bucket.
   std::lock_guard<std::mutex> lock(bucket.mtx);
@@ -16,15 +20,19 @@ void HashTable::Insert(int key, int value) {
   bucket.entries.push_back({key, {value}});
 }
 auto HashTable::Get(int key) const -> std::vector<int> {
+#ifdef BLOOM_FILTER_ENABLE
+  if (!blm_.contains(key)) {
+    return std::vector<int>();
+  }
+#endif
   auto& bucket = buckets[hash(key)];
-  for (auto& entry : bucket.entries) {
+  for (const auto& entry : bucket.entries) {
     if (entry.first == key) {
       return entry.second;
     }
   }
   return std::vector<int>();
 }
-
 //-----------build---------------
 
 void HashTable::Build(std::vector<std::pair<int, int>>& kvs) {
@@ -35,15 +43,21 @@ void HashTable::Build(std::vector<std::pair<int, int>>& kvs) {
 
 //-----------probe---------------
 
-auto HashTable::Probe(std::vector<std::pair<int, int>>& kvs) -> std::vector<std::pair<int,int>> {
+auto HashTable::Probe(std::vector<std::pair<int, int>>& kvs)
+    -> std::vector<std::pair<int, int>> {
   std::vector<std::pair<int, int>> result;
   for (auto& kv : kvs) {
     int key = kv.first;
-    int value_s = kv.second;
-    auto values_r = Get(key);
+    auto values_r = Get(key);  // Get the values from R table
     for (int value_r : values_r) {
-      result.push_back({value_r, value_s});
+      result.push_back({value_r, kv.second});
     }
+    // if (blm_.contains(key)) {
+    //   auto values_r = Get(key);  // Get the values from R table
+    //   for (int value_r : values_r) {
+    //     result.push_back({value_r, kv.second});
+    //   }
+    // }
   }
   return result;
 }
@@ -84,29 +98,37 @@ void probe_thread(const std::vector<std::pair<int, int>>& S, int start, int end,
 
 auto multi_threaded_hash_join(const std::vector<std::pair<int, int>>& R,
                               const std::vector<std::pair<int, int>>& S,
-                              int num_threads)
+                              int num_threads, size_t table_size)
     -> std::vector<std::pair<int, int>> {
-  HashTable ht(R.size() / 10 + 7); 
+  HashTable ht(table_size);
   std::vector<std::thread> threads;
 
-  // 构建阶段
+  // Build
   int N = R.size();
+  int process_num = N / num_threads;
+
   for (int i = 0; i < num_threads; ++i) {
-    int start = i * N / num_threads;
-    int end = (i + 1) * N / num_threads;
+    int start = i * process_num;
+    int end = (i + 1) * process_num;
+    if (i == num_threads - 1) {
+      end = N;  // 最后一个线程处理剩余的元素
+    }
     threads.emplace_back(build_thread, std::ref(R), start, end, std::ref(ht));
   }
   for (auto& t : threads) {
     t.join();
   }
 
-  // 探测阶段
+  // Probe
   threads.clear();
   int M = S.size();
   std::vector<std::vector<std::pair<int, int>>> outputs(num_threads);
   for (int i = 0; i < num_threads; ++i) {
-    int start = i * M / num_threads;
-    int end = (i + 1) * M / num_threads;
+    int start = i * process_num;
+    int end = (i + 1) * process_num;
+    if (i == num_threads - 1) {
+      end = M;
+    }
     threads.emplace_back(probe_thread, std::ref(S), start, end, std::ref(ht),
                          std::ref(outputs[i]));
   }
@@ -114,7 +136,7 @@ auto multi_threaded_hash_join(const std::vector<std::pair<int, int>>& R,
     t.join();
   }
 
-  // 合并输出
+  // Merge results
   std::vector<std::pair<int, int>> final_output;
   for (auto& out : outputs) {
     final_output.insert(final_output.end(), out.begin(), out.end());

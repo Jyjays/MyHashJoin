@@ -26,9 +26,9 @@ std::vector<std::pair<int, int>> generate_random_data(size_t size,
 }
 
 // 设置随机数据参数
-const size_t data_size = 100000;  
-const int key_range = 10000;       // 键的范围：1 到 10,000
-const int value_range = 1000;      // 值的范围：1 到 1,000
+const size_t data_size = 1000000;  
+const int key_range = 10000000;        
+const int value_range = 1000;      
 auto R = generate_random_data(data_size, key_range, value_range);
 auto S = generate_random_data(data_size, key_range, value_range);
 const int num_threads = 8;  // 线程数

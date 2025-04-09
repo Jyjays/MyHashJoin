@@ -37,7 +37,7 @@ target_link_libraries(hashjoin_test
     hashjoin
     ${GTEST_LIBRARIES}
     ${GTEST_MAIN_LIBRARIES}
-    pthread  # 多线程支持
+    pthread 
 )
 
 # 启用测试

@@ -22,6 +22,7 @@ void HashTable::Insert(int key, int value) {
 auto HashTable::Get(int key) const -> std::vector<int> {
 #ifdef BLOOM_FILTER_ENABLE
   if (!blm_.contains(key)) {
+    // std::cout << "Key not found in bloom filter: " << key << std::endl;
     return std::vector<int>();
   }
 #endif

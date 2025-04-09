@@ -2,9 +2,12 @@
 #include <mutex>
 #include <thread>
 #include <vector>
-
+#include "config.h"  // NOLINT
 #include "MyBloom_filter.hpp"
-// #define BLOOM_FILTER_ENABLE
+#ifdef TIME_ENABLE
+#include <chrono>
+#endif
+
 
 namespace hashjoin {
 

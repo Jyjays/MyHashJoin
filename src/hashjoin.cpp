@@ -103,7 +103,9 @@ auto multi_threaded_hash_join(const std::vector<std::pair<int, int>>& R,
     -> std::vector<std::pair<int, int>> {
   HashTable ht(table_size);
   std::vector<std::thread> threads;
-
+#ifdef TIME_ENABLE
+  auto start = std::chrono::high_resolution_clock::now();
+#endif
   // Build
   int N = R.size();
   int process_num = N / num_threads;
@@ -119,7 +121,16 @@ auto multi_threaded_hash_join(const std::vector<std::pair<int, int>>& R,
   for (auto& t : threads) {
     t.join();
   }
+#ifdef TIME_ENABLE
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration =
+      std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "Build time: " << duration.count() << " ms\n";
+#endif
 
+#ifdef TIME_ENABLE
+  auto probe_start = std::chrono::high_resolution_clock::now();
+#endif
   // Probe
   threads.clear();
   int M = S.size();
@@ -142,6 +153,15 @@ auto multi_threaded_hash_join(const std::vector<std::pair<int, int>>& R,
   for (auto& out : outputs) {
     final_output.insert(final_output.end(), out.begin(), out.end());
   }
+#ifdef TIME_ENABLE
+  auto probe_end = std::chrono::high_resolution_clock::now();
+  auto probe_duration =
+      std::chrono::duration_cast<std::chrono::milliseconds>(probe_end - probe_start);
+  std::cout << "Probe time: " << probe_duration.count() << " ms\n";
+  std::cout << "Total time: "
+            << (duration + probe_duration).count() << " ms\n";
+  std::cout << "Match count: " << final_output.size() << "\n";
+#endif
   return final_output;
 }
 

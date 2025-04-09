@@ -27,7 +27,7 @@ std::vector<std::pair<int, int>> generate_random_data(size_t size,
 
 // 设置随机数据参数
 const size_t data_size = 1000000;  
-const int key_range = 10000000;        
+const int key_range = 10000;        
 const int value_range = 1000;      
 auto R = generate_random_data(data_size, key_range, value_range);
 auto S = generate_random_data(data_size, key_range, value_range);
@@ -63,16 +63,14 @@ TEST(HashJoinTest, PerformanceTestWith100K) {
 }
 
 TEST(HashJoinTest, MutiThreadTest) {
-  // 生成随机数据
-//   auto R = generate_random_data(data_size, key_range, value_range);
-//   auto S = generate_random_data(data_size, key_range, value_range);
-  auto start = std::chrono::high_resolution_clock::now();
+
+//   auto start = std::chrono::high_resolution_clock::now();
   auto res = multi_threaded_hash_join(R, S, num_threads, table_size);
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  std::cout << "Multi-threaded HashJoin time: " << duration.count() << " ms\n";
-  std::cout << "Join result size: " << res.size() << "\n";
+//   auto end = std::chrono::high_resolution_clock::now();
+//   auto duration =
+//       std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+//   std::cout << "Multi-threaded HashJoin time: " << duration.count() << " ms\n";
+//   std::cout << "Join result size: " << res.size() << "\n";
 }
 
 }  // namespace hashjoin

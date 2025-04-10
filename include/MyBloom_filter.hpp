@@ -20,7 +20,7 @@ private:
 
 public:
     BloomFilter(size_t size, size_t num_hashes) : bits(size, false), num_hashes(num_hashes), size(size) {}
-
+    BloomFilter() = default;
     void insert(int key) {
         for (size_t i = 0; i < num_hashes; ++i) {
             bits[hash(key, i)] = true;

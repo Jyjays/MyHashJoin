@@ -2,22 +2,27 @@
 #include <mutex>
 #include <thread>
 #include <vector>
-#include "config.h"  // NOLINT
+#include <cmath>
+
 #include "MyBloom_filter.hpp"
+#include "config.h"  // NOLINT
 #ifdef TIME_ENABLE
 #include <chrono>
 #endif
-
 
 namespace hashjoin {
 
 class HashTable {
  public:
-  explicit HashTable(size_t num_buckets = 10007, size_t bloom_size = 2000000,
-                     size_t hash_size = 3)
-      : buckets(num_buckets), blm_(bloom_size, hash_size) {
+  explicit HashTable(size_t num_buckets = 10007, size_t key_size = 10000,
+                     double target_fpr = 0.01)
+      : buckets(num_buckets) {
 #ifdef BLOOM_FILTER_ENABLE
     std::cout << "Bloom filter enabled." << std::endl;
+    size_t bloom_size = key_size * 10;
+    size_t hash_size = static_cast<size_t>(
+        std::ceil(std::log(1 / target_fpr) / std::log(2)));
+    blm_ = BloomFilter(bloom_size, hash_size);
 #else
     std::cout << "Bloom filter disabled." << std::endl;
 #endif
@@ -55,7 +60,8 @@ void probe_thread(const std::vector<std::pair<int, int>>& S, int start, int end,
                   std::vector<std::pair<int, int>>& output);
 auto multi_threaded_hash_join(const std::vector<std::pair<int, int>>& R,
                               const std::vector<std::pair<int, int>>& S,
-                              int num_threads = 8, size_t table_size = 10007)
+                              int num_threads = 8, size_t table_size = 10007,
+                              size_t key_size = 10000)
     -> std::vector<std::pair<int, int>>;
 
 };  // namespace hashjoin

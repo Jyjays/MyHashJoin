@@ -10,8 +10,8 @@ namespace hashjoin {
 
 // 生成随机数据的辅助函数
 std::vector<std::pair<int, int>> generate_random_data(size_t size,
-                                                      int key_range,
-                                                      int value_range) {
+                                                      size_t key_range,
+                                                      size_t value_range) {
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> key_dist(1, key_range);      // 键的范围
@@ -26,9 +26,9 @@ std::vector<std::pair<int, int>> generate_random_data(size_t size,
 }
 
 // 设置随机数据参数
-const size_t data_size = 1000000;  
-const int key_range = 10000;        
-const int value_range = 1000;      
+const size_t data_size = 10000000;  
+const size_t key_range = 100000000;        
+const size_t value_range = 1000;      
 auto R = generate_random_data(data_size, key_range, value_range);
 auto S = generate_random_data(data_size, key_range, value_range);
 const int num_threads = 8;  // 线程数
@@ -38,7 +38,7 @@ const size_t table_size = R.size() / 100 + 7;  // 哈希表大小
 // 测试用例：测量 HashJoin 的运行时间
 TEST(HashJoinTest, PerformanceTestWith100K) {
   // 创建 HashTable 对象
-  HashTable ht(table_size);  // 默认构造函数，假设 buckets 大小已设置
+  HashTable ht(table_size, key_range);  // 默认构造函数，假设 buckets 大小已设置
 
   // 测量 Build 阶段时间
   auto build_start = std::chrono::high_resolution_clock::now();
@@ -65,7 +65,7 @@ TEST(HashJoinTest, PerformanceTestWith100K) {
 TEST(HashJoinTest, MutiThreadTest) {
 
 //   auto start = std::chrono::high_resolution_clock::now();
-  auto res = multi_threaded_hash_join(R, S, num_threads, table_size);
+  auto res = multi_threaded_hash_join(R, S, num_threads, table_size, key_range);
 //   auto end = std::chrono::high_resolution_clock::now();
 //   auto duration =
 //       std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -77,5 +77,9 @@ TEST(HashJoinTest, MutiThreadTest) {
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
+
+  std:: cout << "Data size: " << hashjoin::data_size << std::endl;
+  std:: cout << "Key range: " << hashjoin::key_range << std::endl;
+  std:: cout << "Value range: " << hashjoin::value_range << std::endl;
   return RUN_ALL_TESTS();
 }

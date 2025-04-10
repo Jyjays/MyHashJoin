@@ -5,7 +5,7 @@ namespace hashjoin {
 //-----------public--------------
 void HashTable::Insert(int key, int value) {
 #ifdef BLOOM_FILTER_ENABLE
-  std::lock_guard<std::mutex> blm_lock(blm_mtx);
+  //std::lock_guard<std::mutex> blm_lock(blm_mtx);
   blm_.insert(key);
 #endif
   auto& bucket = buckets[hash(key)];
@@ -99,9 +99,9 @@ void probe_thread(const std::vector<std::pair<int, int>>& S, int start, int end,
 
 auto multi_threaded_hash_join(const std::vector<std::pair<int, int>>& R,
                               const std::vector<std::pair<int, int>>& S,
-                              int num_threads, size_t table_size)
+                              int num_threads, size_t table_size, size_t key_size)
     -> std::vector<std::pair<int, int>> {
-  HashTable ht(table_size);
+  HashTable ht(table_size, key_size);
   std::vector<std::thread> threads;
 #ifdef TIME_ENABLE
   auto start = std::chrono::high_resolution_clock::now();
